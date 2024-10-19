@@ -71,7 +71,7 @@ def get_completion(context: str, prompt: str, max_tokens: int = 1024):
 def get_data(ctx: Context, request: str):
     """Instruct the AI model to retrieve data and context for the data and return it in machine readable JSON format"""
     context = '''    
-    You are a helpful agent who can provide answers to questions along with sources and relevant context in a machine readable format.
+    You are a helpful agent who can provide approriate replies to incoming emails in a machine readable format.
     
     Please follow these guidelines:
     1. Try to answer the question as accurately as possible, using only reliable sources.
