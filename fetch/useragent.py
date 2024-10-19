@@ -11,7 +11,8 @@ agent = Agent(
 )
 
 # Write your question here
-EMAIL = "Hi Andy, I love you. Write me a message back saying hi!"
+EMAIL = "What's the population of the UK?"
+#"Hi Andy, I love you. Write me a message back saying hi!"
 
 AI_MODEL_AGENT_ADDRESS = (
     "agent1qwckwhmmyp5zl3d67dn2r844v4nt0ygcaxwpglr3vn0e83lagfujq86a38n"
