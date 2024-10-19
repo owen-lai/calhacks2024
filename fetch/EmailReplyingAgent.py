@@ -86,7 +86,7 @@ def get_data(ctx: Context, request: str):
     '''
 
     response = get_completion(context, request, max_tokens=300)
-
+    print(response)
     try:
         data = json.loads(response.splitlines()[-1])
         msg = Data.parse_obj(data)

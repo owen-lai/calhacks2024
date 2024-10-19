@@ -11,7 +11,7 @@ agent = Agent(
 )
 
 # Write your question here
-QUESTION = "What's the population of the UK?"
+EMAIL = "Hi Andy, I love you. Write me a message back saying hi!"
 
 AI_MODEL_AGENT_ADDRESS = (
     "agent1qwckwhmmyp5zl3d67dn2r844v4nt0ygcaxwpglr3vn0e83lagfujq86a38n"
@@ -38,8 +38,8 @@ class Data(Model):
 async def ask_question(ctx: Context):
     """Send question to AI Model Agent"""
     #ctx.logger.info(f"Hello, my address is {ctx.address}.")
-    ctx.logger.info(f"Asking question to AI model agent: {QUESTION}")
-    await ctx.send(AI_MODEL_AGENT_ADDRESS, Request(text=QUESTION))
+    ctx.logger.info(f"Asking question to AI model agent: {EMAIL}")
+    await ctx.send(AI_MODEL_AGENT_ADDRESS, Request(text=EMAIL))
 
 @agent.on_message(model=Data)
 async def handle_data(ctx: Context, sender: str, data: Data):
