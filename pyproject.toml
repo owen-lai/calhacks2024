@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "fetch"
+name = "calhacks24"
 version = "0.1.0"
 description = ""
 authors = ["Andy Yang <ayangsea@gmail.com>"]

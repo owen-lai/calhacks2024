@@ -37,8 +37,9 @@ class Error(Model):
 
 
 class Data(Model):
-    value: float
-    unit: str
+    subject: str
+    body: str
+    recipient: str
     timestamp: str
     confidence: float
     source: str
@@ -74,9 +75,9 @@ def get_data(ctx: Context, request: str):
     You are a helpful agent who can provide approriate replies to incoming emails in a machine readable format.
     
     Please follow these guidelines:
-    1. Try to answer the question as accurately as possible, using only reliable sources.
+    1. Please send an appropriate reply to this email. Only provide the contents of the email.
     2. Rate your confidence in the accuracy of your answer from 0 to 1 based on the credibility of the data publisher and how much it might have changed since the publishing date.
-    3. In the last line of your response, provide the information in the exact JSON format: {"value": value, "unit": unit, "timestamp": time, "confidence": rating, "source": ref, "notes": summary}
+    3. In the last line of your response, provide the information in the exact JSON format: {"subject": subject of email, "body": the response to be sent with proper email formatting (new lines), "recipient": recipient email, "timestamp": time, "confidence": rating, "source": ref, "notes": summary}
         - value is the numerical value of the data without any commas or units
         - unit is the measurement unit of the data if applicable, or an empty string if not applicable
         - time is the approximate timestamp when this value was published in ISO 8601 format
@@ -88,11 +89,12 @@ def get_data(ctx: Context, request: str):
     response = get_completion(context, request, max_tokens=300)
 
     try:
+        # print("response: ", response)
         data = json.loads(response.splitlines()[-1])
         msg = Data.parse_obj(data)
         return msg
     except Exception as ex:
-        exception(f"An error occurred retrieving data from the AI model: {ex}")
+        Exception(f"An error occurred retrieving data from the AI model: {ex}")
         return Error(text="Sorry, I wasn't able to answer your request this time. Feel free to try again.")
 
 @agent.on_message(model=Request)

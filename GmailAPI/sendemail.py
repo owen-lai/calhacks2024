@@ -1,7 +1,7 @@
 import os.path
 import base64
 from email.message import EmailMessage
-import util
+from GmailAPI.util import get_service
 
 import google.auth
 from googleapiclient.discovery import build
@@ -11,7 +11,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 
-def gmail_create_draft():
+def gmail_create_draft(subject, body, recipient, messageID, threadID):
   """Create and insert a draft email.
    Print the returned draft's message and id.
    Returns: Draft object, including draft id and message meta data.
@@ -23,20 +23,22 @@ def gmail_create_draft():
 
   try:
     # create gmail api client
-    service = util.get_service()
+    service = get_service()
 
     message = EmailMessage()
 
-    message.set_content("Hello")
+    message.set_content(body)
 
-    message["To"] = "lai.owen@berkeley.edu"
+    message["To"] = recipient
     message["From"] = "ayangsea@gmail.com"
-    message["Subject"] = "Hello"
+    message["Subject"] = "Re: " + subject
+    message['In-Reply-To'] = messageID
+    message['References'] = messageID
 
     # encoded message
     encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
 
-    create_message = {"message": {"raw": encoded_message}}
+    create_message = {"message": {"raw": encoded_message, "threadId": threadID}}
     # pylint: disable=E1101
     draft = (
         service.users()
@@ -47,14 +49,14 @@ def gmail_create_draft():
 
     print(f'Draft id: {draft["id"]}\nDraft message: {draft["message"]}')
 
-    sent_message = (
-        service.users()
-        .drafts()
-        .send(userId="me", body={"id": draft["id"]})
-        .execute()
-    )
+    # sent_message = (
+    #     service.users()
+    #     .drafts()
+    #     .send(userId="me", body={"id": draft["id"]})
+    #     .execute()
+    # )
 
-    print(f'Message sent! Message Id: {sent_message["id"]}')
+    # print(f'Message sent! Message Id: {sent_message["id"]}')
 
   except HttpError as error:
     print(f"An error occurred: {error}")
