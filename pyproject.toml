@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "calhacks2024"
+version = "0.1.0"
+description = ""
+authors = ["owen-lai <124204269+owen-lai@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
