@@ -46,9 +46,14 @@ class Data(Model):
 async def ask_question(ctx: Context):
     """Send question to AI Model Agent"""
     #ctx.logger.info(f"Hello, my address is {ctx.address}.")
+<<<<<<< HEAD
     print("here 1")
     ctx.logger.info(f"Asking question to AI model agent: {QUESTION}")
     await ctx.send(AI_MODEL_AGENT_ADDRESS, Request(text=QUESTION))
+=======
+    ctx.logger.info(f"Asking question to AI model agent: {EMAIL}")
+    await ctx.send(AI_MODEL_AGENT_ADDRESS, Request(text=EMAIL))
+>>>>>>> edcef9844b853dbfec24cbace172405c420a949f
 
 @agent.on_message(model=Data)
 async def handle_data(ctx: Context, sender: str, data: Data):
