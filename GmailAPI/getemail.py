@@ -1,4 +1,4 @@
-from GmailAPI.util import authenticate
+from GmailAPI.util import authenticate, get_service
 import os.path
 import base64
 
@@ -17,6 +17,7 @@ def get_email_message(service, user_id, message_id):
     headers = email_data['headers']
     thread_id = message['threadId']
     message_id = message['id']
+    labelIds = message['labelIds']
 
     # Extract the subject, sender, etc.
     subject = None
@@ -33,8 +34,28 @@ def get_email_message(service, user_id, message_id):
         for part in email_data['parts']:
             if part['mimeType'] == 'text/plain':
                 body = base64.urlsafe_b64decode(part['body']['data']).decode('utf-8')
+    
+    service.users().messages().modify(userId=user_id, id=message_id, body={'removeLabelIds': ["UNREAD"]}).execute()
 
-    return thread_id, message_id, subject, sender, body
+    return thread_id, message_id, subject, sender, body, labelIds
+
+def get_email_attachments(service, user_id, message_id):
+    message = service.users().messages().get(userId=user_id, id=message_id, format='full').execute()
+    email_data = message['payload']
+    if 'parts' in email_data:
+        for part in email_data['parts']:
+            if part['filename']:
+                attachment_id = part['body']['attachmentId']
+                attachment = service.users().messages().attachments().get(userId=user_id, messageId=message_id, id=attachment_id).execute()
+                file_data = base64.urlsafe_b64decode(attachment['data'].encode('UTF-8'))
+                path = os.path.join("", part['filename'])
+
+                # Save the attachment to the specified directory
+                with open(part['filename'], 'wb') as f:
+                    f.write(file_data)
+                
+                print(f"Attachment {part['filename']} saved to {path}")
+
 
 def get_latest_email():
 
@@ -50,7 +71,7 @@ def get_latest_email():
 
     try:
         # Call the Gmail API to fetch a list of emails
-        service = build("gmail", "v1", credentials=creds)
+        service = get_service()
         results = service.users().messages().list(userId='me', maxResults=10, q="label:inbox").execute()
         messages = results.get('messages', [])
 
@@ -59,9 +80,10 @@ def get_latest_email():
             print("No messages found.")
             return
         else:
-            message_id = messages[1]['id']
-            thread_id, message_id, subject, sender, body = get_email_message(service, "me", message_id)
-            return thread_id, message_id, subject, sender, body
+            message_id = messages[0]['id']
+            thread_id, message_id, subject, sender, body, labelIds = get_email_message(service, "me", message_id)
+            get_email_attachments(service, "me", message_id)
+            return thread_id, message_id, subject, sender, body, labelIds
             # print(message)
 
     except HttpError as error:

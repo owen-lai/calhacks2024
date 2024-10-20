@@ -67,5 +67,5 @@ if __name__ == "__main__":
             QUESTION = f"Sender Email: {sender}, Body: {body}"
             agent.run()
         else:
-            print("Latest Email Read, waiting 30 seconds")
-            time.sleep(30)
+            print("Latest Email Read, waiting 10 seconds")
+            time.sleep(10)

@@ -1,15 +1,8 @@
 [tool.poetry]
-<<<<<<< HEAD
 name = "calhacks24"
 version = "0.1.0"
 description = ""
 authors = ["Andy Yang <ayangsea@gmail.com>"]
-=======
-name = "calhacks2024"
-version = "0.1.0"
-description = ""
-authors = ["owen-lai <124204269+owen-lai@users.noreply.github.com>"]
->>>>>>> edcef9844b853dbfec24cbace172405c420a949f
 readme = "README.md"
 
 [tool.poetry.dependencies]
