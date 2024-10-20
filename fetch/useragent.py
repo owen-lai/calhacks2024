@@ -49,6 +49,8 @@ class EmailInfo:
     body: str
     labelIds: list[str]
     pdfPath: str
+    in_reply_to: str
+    references: str
 
 class PDF(Model):
     path: str
@@ -60,7 +62,7 @@ email = EmailInfo()
 async def ask_question(ctx: Context):
     """Send question to AI Model Agent"""
     #ctx.logger.info(f"Hello, my address is {ctx.address}.")
-    email.thread_id, email.message_id, email.subject, email.sender, email.body, email.labelIds, email.pdfPath = get_latest_email()
+    email.thread_id, email.message_id, email.subject, email.sender, email.body, email.labelIds, email.pdfPath, email.in_reply_to, email.references = get_latest_email()
     if "UNREAD" in email.labelIds:
         QUESTION = f"Sender Email: {email.sender}, Body: {email.body}"
         ctx.logger.info(f"Asking question to AI model agent: {QUESTION}")
@@ -73,7 +75,7 @@ async def ask_question(ctx: Context):
 @agent.on_message(model=Data)
 async def handle_data(ctx: Context, sender: str, data: Data):
     """Log response from AI Model Agent """
-    gmail_create_draft(subject=email.subject, body=data.body, recipient=data.recipient, threadID=email.thread_id, messageID=email.message_id)
+    gmail_create_draft(subject=email.subject, body=data.body, recipient=data.recipient, threadID=email.thread_id, messageID=email.message_id, in_reply_to=email.in_reply_to, references=email.references)
     ctx.logger.info(f"Got response from AI model agent: {data}")
 
 @agent.on_message(model=Error)
