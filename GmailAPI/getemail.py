@@ -1,3 +1,4 @@
+from email import message
 from GmailAPI.util import authenticate, get_service
 import os.path
 import base64
@@ -48,26 +49,18 @@ def get_email_attachments(service, user_id, message_id):
                 attachment_id = part['body']['attachmentId']
                 attachment = service.users().messages().attachments().get(userId=user_id, messageId=message_id, id=attachment_id).execute()
                 file_data = base64.urlsafe_b64decode(attachment['data'].encode('UTF-8'))
-                path = os.path.join("", part['filename'])
+                path = os.path.join("test_sig/", part['filename'])
+                print(path)
 
                 # Save the attachment to the specified directory
-                with open(part['filename'], 'wb') as f:
+                with open(path, 'wb') as f:
                     f.write(file_data)
                 
                 print(f"Attachment {part['filename']} saved to {path}")
+                return part['filename']
 
 
 def get_latest_email():
-
-    creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists("../GmailAPI/token.json"):
-        creds = Credentials.from_authorized_user_file("../GmailAPI/token.json", SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
-    else:
-        creds = authenticate()
 
     try:
         # Call the Gmail API to fetch a list of emails
@@ -82,8 +75,11 @@ def get_latest_email():
         else:
             message_id = messages[0]['id']
             thread_id, message_id, subject, sender, body, labelIds = get_email_message(service, "me", message_id)
-            get_email_attachments(service, "me", message_id)
-            return thread_id, message_id, subject, sender, body, labelIds
+            if "UNREAD" in labelIds:
+                pdfPath = get_email_attachments(service, "me", message_id)
+            else:
+                pdfPath = ""
+            return thread_id, message_id, subject, sender, body, labelIds, pdfPath
             # print(message)
 
     except HttpError as error:

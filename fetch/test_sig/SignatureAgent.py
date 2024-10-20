@@ -3,11 +3,12 @@ import fitz
 import json
 import requests
 from PIL import Image
-import cv2
+#import cv2
 import pytesseract
 from pdf2image import convert_from_path
 import os
 import numpy as np
+from datetime import datetime
 
 json_file = "easy-pdf.json"
 
@@ -55,17 +56,20 @@ SignatureAgent = Agent(
  
 print(SignatureAgent.address)
  
-@SignatureAgent.on_event("startup")
-async def message_handler(ctx: Context):
+@SignatureAgent.on_message(model=PDF)
+async def message_handler(ctx: Context, sender: str, pdf: PDF):
    """Log response from AI Model Agent """
+   ctx.logger.info(f"Got request from {sender}: {pdf.path}")
    # Parse the Json File and Download PDF
    #pdf_link, pdf_name = parse_json_for_attachments(json_file)
-   pdf_name = "lease.pdf"
+   pdf_name = pdf.path
    # Process the PDF
    ctx.logger.info(f"Got a request to process the PDF file at: {pdf_name}")
    pdf_document = fitz.open(pdf_name)
    pages = convert_from_path(pdf_name, dpi=300)
    signature_keywords = ["Signature", "Sign Here", "SIGNATURE", "SIGN HERE"]
+   date_keywords = ["Date", "DATE", "Date Signed", "DATE SIGNED"]
+   name_keywords = ["PRINT NAME", "NAME"]
 
    #Load the upsampler using OpenCV DNN Super Resolution module
    #sr = cv2.dnn_superres.DnnSuperResImpl_create()
@@ -128,11 +132,31 @@ async def message_handler(ctx: Context):
 
                            os.remove(temp_signature_image)
 
+                       if any(keyword in text for keyword in date_keywords):
+                           print(f"Date field found on page {page_number + 1}")
+                           print(f"Text: {text}")
+                           print(f"Coordinates: {span['bbox']}")
+
+                           x, y, X, Y = span['bbox']
+
+                           current_date = datetime.now().strftime("%m/%d/%Y")
+                           page.insert_text((x, y+20), current_date, fontsize=10)
+
+                       if any(keyword in text for keyword in name_keywords):
+                           print(f"Name field found on page {page_number + 1}")
+                           print(f"Text: {text}")
+                           print(f"Coordinates: {span['bbox']}")
+                           x, y, X, Y = span['bbox']
+                           name = "Andy Yang"
+
+                           page.insert_text((x, y+20), name, fontsize=10)
+
+
    # Save the updated PDF with changes
    pdf_document.save("scanned_for_signature.pdf")
    pdf_document.close()
 
-   #os.remove(pdf_name)
+   os.remove(pdf_name)
 
    print("Signed PDF saved to scanned_for_signature.pdf")
 

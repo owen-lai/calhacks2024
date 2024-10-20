@@ -86,7 +86,7 @@ def get_data(ctx: Context, request: str):
         - summary is a brief justification for the confidence rating (why you are confident or not confident in the accuracy of the value)
     '''
 
-    response = get_completion(context, request, max_tokens=1000)
+    response = get_completion(context, request, max_tokens=300)
     # print(response))
     try:
         # print("response: ", response)
