@@ -2,9 +2,11 @@ from uagents import Agent, Context, Model
 from ics import Calendar
 import sys
 import os
+import pytz
 import base64
 import requests
 import time
+import requests
 from datetime import datetime, timedelta
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from GmailAPI.getemail import get_latest_email
@@ -22,7 +24,7 @@ InvitationAgent = Agent(
    endpoint=["http://127.0.0.1:8080/submit"],
 )
 
-thread_id, latest_message_id, subject, sender, body, labelIds = get_latest_email()
+thread_id, latest_message_id, subject, sender, body, labelIds, pdfPath, in_reply_to, references = get_latest_email()
 # print(InvitationAgent.address)
 # get service from util.py, user_id="me", message_id from calling get_latest_email()
 def is_email_invitation(service, user_id, message_id):
@@ -70,7 +72,10 @@ def open_and_parse_ics(file_path):
             return "There's 0 or more than 1 events"
 
 
-def get_transport_options(api_key, origin, destination, arrival_time):
+from datetime import datetime, timedelta
+import pytz  # Use for timezone handling
+
+def get_transport_options(api_key, origin, destination, arrival_time, timezone='America/Los_Angeles'):
     """
     Find transportation options from Location A to Location B using Google Maps Directions API.
 
@@ -79,6 +84,7 @@ def get_transport_options(api_key, origin, destination, arrival_time):
         origin (str): Start location (Location A).
         destination (str): End location (Location B).
         arrival_time (int): Arrival time in Unix timestamp.
+        timezone (str): Timezone for the locations (default is 'America/Los_Angeles').
 
     Returns:
         dict: Dictionary containing transportation options for each mode of transport.
@@ -88,6 +94,10 @@ def get_transport_options(api_key, origin, destination, arrival_time):
     # Modes of transport to check
     transport_modes = ['driving', 'walking', 'bicycling', 'transit']
     transport_options = {}
+
+    # Convert the Unix timestamp into a localized datetime object
+    local_tz = pytz.timezone(timezone)
+    arrival_time_dt = datetime.fromtimestamp(arrival_time, tz=local_tz)
 
     # Loop over each mode of transport and make a request
     for mode in transport_modes:
@@ -118,48 +128,57 @@ def get_transport_options(api_key, origin, destination, arrival_time):
     
     return transport_options
 
-def display_transport_options(transport_options, arrival):
+def display_transport_options(transport_options, arrival_time, timezone='America/Los_Angeles'):
     """
-    Display the transportation options retrieved from the Google Maps Directions API.
+    Display the transportation options retrieved from the Google Maps Directions API,
+    including calculated departure times for modes other than transit.
 
     Args:
         transport_options (dict): Dictionary of transportation options by mode.
-        arrival (int): arrival time in unix time
+        arrival_time (int): Desired arrival time in Unix timestamp format.
+        timezone (str): Timezone for the locations (default is 'America/Los_Angeles').
     """
     res = ""
-    arrival_time_dt = datetime.utcfromtimestamp(arrival)
+    
+    # Convert the arrival_time Unix timestamp to a localized datetime object
+    local_tz = pytz.timezone(timezone)
+    arrival_time_dt = datetime.fromtimestamp(arrival_time, tz=local_tz)  # Convert Unix timestamp to local time
+    
     for mode, routes in transport_options.items():
         res += f"\n--- {mode.upper()} TRANSPORT OPTIONS ---"
         for route in routes:
             leg = route['legs'][0]
             distance = leg['distance']['text']
-            duration = leg['duration']['text']
-            duration_seconds = leg['duration']['value']
+            duration_text = leg['duration']['text']
+            duration_seconds = leg['duration']['value']  # Duration in seconds
             start_address = leg['start_address']
             end_address = leg['end_address']
 
-            if mode == "transit":
-                departure_time = leg.get('departure_time', {}).get('text', 'N/A')
-                arrival_time = leg.get('arrival_time', {}).get('text', 'N/A')
-            else:
+            # Calculate departure time for non-transit modes
+            if mode != 'transit':
                 calculated_departure_time = arrival_time_dt - timedelta(seconds=duration_seconds)
                 departure_time = calculated_departure_time.strftime("%I:%M %p")
-                arrival_time = arrival_time_dt.strftime("%I:%M %p")
-        
+                arrival_time_str = arrival_time_dt.strftime("%I:%M %p")
+            else:
+                # Use provided departure and arrival times for transit mode
+                departure_time = leg.get('departure_time', {}).get('text', 'N/A')
+                arrival_time_str = leg.get('arrival_time', {}).get('text', 'N/A')
+
             res += f"From: {start_address}\n"
             res += f"To: {end_address}\n"
             res += f"Distance: {distance}\n"
-            res += f"Duration: {duration}\n"
+            res += f"Duration: {duration_text}\n"
             res += f"Departure Time: {departure_time}\n"
-            res += f"Arrival Time: {arrival_time}\n"
+            res += f"Arrival Time: {arrival_time_str}\n"
             res += "\nSteps:\n"
-                
+            
             for step in leg['steps']:
                 travel_mode = step['travel_mode']
                 instruction = step['html_instructions']
                 step_distance = step['distance']['text']
                 res += f"{travel_mode}: {instruction} ({step_distance})\n"
             res += "\n"
+    
     return res
 
 
@@ -172,6 +191,42 @@ def iso_to_unix(iso_time):
     
     return unix_timestamp
 
+def get_user_coordinates():
+    """
+    Get the user's current coordinates based on their IP address.
+    """
+    response = requests.get("https://ipinfo.io")
+    
+    if response.status_code == 200:
+        data = response.json()
+        location = data.get("loc").split(",")  # "loc" contains the lat and long as "lat,long"
+        latitude, longitude = location[0], location[1]
+        return str(latitude) + ", " + str(longitude)
+    else:
+        raise Exception(f"Error: {response.status_code} - Unable to fetch location")
+
+def get_location_coordinates(api_key, location_name):
+    
+    base_url = "https://maps.googleapis.com/maps/api/geocode/json"
+    params = {
+        "address": location_name,
+        "key": api_key
+    }
+    
+    response = requests.get(base_url, params=params)
+    
+    if response.status_code == 200:
+        geocode_data = response.json()
+        
+        if geocode_data['status'] == 'OK':
+            location = geocode_data['results'][0]['geometry']['location']
+            latitude, longitude = location['lat'], location['lng']
+            return str(latitude) + ", " + str(longitude)
+        else:
+            raise Exception(f"Geocoding API error: {geocode_data['status']}")
+    else:
+        raise Exception(f"Error: {response.status_code} - Unable to fetch location data")
+
  
 @InvitationAgent.on_event("startup")
 async def message_handler(ctx: Context):
@@ -183,8 +238,11 @@ async def message_handler(ctx: Context):
         start_time, end_location = open_and_parse_ics(path)
         api_key = "AIzaSyCyqDRfZygvU-AWOuvI-RtjM2vxwug3nRU"
         # Locations
-        origin = "37.872813212049145, -122.25356288057456"  # Example: San Francisco, CA
-        destination = "37.6213,-122.3789"  # Example: San Francisco International Airport, CA
+        origin = "37.78437260699507, -122.40336710947442" # get_user_coordinates()
+        ctx.logger.info(origin)
+        # "37.872813212049145, -122.25356288057456" Example: San Francisco, CA
+        destination = get_location_coordinates(api_key, end_location)
+        # "37.6213,-122.3789" Example: San Francisco International Airport, CA
         # Convert desired arrival time to Unix timestamp (seconds since epoch)
         desired_arrival_time = iso_to_unix(start_time)
         # Get transportation options
