@@ -1,6 +1,7 @@
 """
 This agent can ask a question to the AI model agent and display the answer.
 """
+from email import message
 from re import sub
 import time
 from uagents import Agent, Context, Model
@@ -38,20 +39,32 @@ class Data(Model):
     source: str
     notes: str
 
+class EmailInfo:
+    thread_id: int
+    message_id: int
+    subject: str
+    sender: str
+    body: str
+    labelIds: list[str]
 
-@agent.on_event("startup")
+email = EmailInfo()
+
+@agent.on_interval(10.0)
 async def ask_question(ctx: Context):
     """Send question to AI Model Agent"""
     #ctx.logger.info(f"Hello, my address is {ctx.address}.")
-    print("here 1")
-    ctx.logger.info(f"Asking question to AI model agent: {QUESTION}")
-    await ctx.send(AI_MODEL_AGENT_ADDRESS, Request(text=QUESTION))
+    email.thread_id, email.message_id, email.subject, email.sender, email.body, email.labelIds = get_latest_email()
+    if "UNREAD" in email.labelIds:
+        QUESTION = f"Sender Email: {email.sender}, Body: {email.body}"
+        print("here 1")
+        ctx.logger.info(f"Asking question to AI model agent: {QUESTION}")
+        await ctx.send(AI_MODEL_AGENT_ADDRESS, Request(text=QUESTION))
 
 @agent.on_message(model=Data)
 async def handle_data(ctx: Context, sender: str, data: Data):
     """Log response from AI Model Agent """
     print("here 2")
-    gmail_create_draft(subject=subject, body=data.body, recipient=data.recipient, threadID=thread_id, messageID=message_id)
+    gmail_create_draft(subject=email.subject, body=data.body, recipient=data.recipient, threadID=email.thread_id, messageID=email.message_id)
     ctx.logger.info(f"Got response from AI model agent: {data}")
 
 @agent.on_message(model=Error)
@@ -61,11 +74,4 @@ async def handle_error(ctx: Context, sender: str, error: Error):
     ctx.logger.info(f"Got error from AI model agent: {error}")
 
 if __name__ == "__main__":
-    while True:
-        thread_id, message_id, subject, sender, body, labelIds = get_latest_email()
-        if "UNREAD" in labelIds:
-            QUESTION = f"Sender Email: {sender}, Body: {body}"
-            agent.run()
-        else:
-            print("Latest Email Read, waiting 10 seconds")
-            time.sleep(10)
+    agent.run()

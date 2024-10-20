@@ -77,7 +77,7 @@ def get_data(ctx: Context, request: str):
     Please follow these guidelines:
     1. Please send an appropriate reply to this email. Only provide the contents of the email.
     2. Rate your confidence in the accuracy of your answer from 0 to 1 based on the credibility of the data publisher and how much it might have changed since the publishing date.
-    3. In the last line of your response, provide the information in the exact JSON format: {"subject": subject of email, "body": the response to be sent with proper email formatting, "recipient": recipient email, "timestamp": time, "confidence": rating, "source": ref, "notes": summary}
+    3. In the last line of your response, provide the information in the exact JSON format: {"subject": subject of email, "body": the response to be sent with proper formatting in the greeting and closing, "recipient": recipient email, "timestamp": time, "confidence": rating, "source": ref, "notes": summary}
         - value is the numerical value of the data without any commas or units
         - unit is the measurement unit of the data if applicable, or an empty string if not applicable
         - time is the approximate timestamp when this value was published in ISO 8601 format
