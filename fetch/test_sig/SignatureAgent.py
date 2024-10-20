@@ -74,8 +74,9 @@ async def message_handler(ctx: Context):
 
    for page_number, page_image in enumerate(pages):
        page = pdf_document.load_page(page_number)
+       blocks = page.get_text("dict")["blocks"]
        print(f"Scanning page {page_number + 1}...")
-       gray_image = cv2.cvtColor(np.array(page_image), cv2.COLOR_RGB2GRAY)
+       '''gray_image = cv2.cvtColor(np.array(page_image), cv2.COLOR_RGB2GRAY)
        #gray_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
        #gray_image = cv2.fastNlMeansDenoising(gray_image, None, 30, 7, 21)
        #gray_image = cv2.adaptiveThreshold(gray_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
@@ -104,8 +105,8 @@ async def message_handler(ctx: Context):
                signature_image.save(temp_signature_image)
 
                page.insert_image(fitz.Rect(x, y, x+width, y+height), filename=temp_signature_image)
-               os.remove(temp_signature_image)
-       '''
+               os.remove(temp_signature_image)'''
+       
        for block in blocks:
            if "lines" in block:  # Block contains text
                for line in block["lines"]:
@@ -123,15 +124,15 @@ async def message_handler(ctx: Context):
                            temp_signature_image = "temp_signature.png"
                            signature_image.save(temp_signature_image)
 
-                           page.insert_image(fitz.Rect(x, y, x+width, y+height), filename=temp_signature_image)
+                           page.insert_image(fitz.Rect(x+70, y-10, x+70+width, y-10+height), filename=temp_signature_image)
 
-                           os.remove(temp_signature_image)'''
+                           os.remove(temp_signature_image)
 
    # Save the updated PDF with changes
    pdf_document.save("scanned_for_signature.pdf")
    pdf_document.close()
 
-   os.remove(pdf_name)
+   #os.remove(pdf_name)
 
    print("Signed PDF saved to scanned_for_signature.pdf")
 
