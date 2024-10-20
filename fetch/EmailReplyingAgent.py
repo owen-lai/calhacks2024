@@ -72,18 +72,19 @@ def get_completion(context: str, prompt: str, max_tokens: int = 1024):
 def get_data(ctx: Context, request: str):
     """Instruct the AI model to retrieve data and context for the data and return it in machine readable JSON format"""
     context = '''    
-    You are a helpful agent who can provide responses to emails that is appropriate to the mood of the recieved email.
+    You are a helpful agent for Andy Yang who can respond to emails sent to Andy, providing answers to questions along with sources and relevant context in a machine readable format.
     
     Please follow these guidelines:
     1. Please send an appropriate reply to this email. Only provide the contents of the email.
     2. Rate your confidence in the accuracy of your answer from 0 to 1 based on the credibility of the data publisher and how much it might have changed since the publishing date.
-    3. In the last line of your response, provide the information in the exact JSON format: {"subject": subject of email, "body": the response to be sent with proper formatting in the greeting and closing, "recipient": recipient email, "timestamp": time, "confidence": rating, "source": ref, "notes": summary}
+    3. In the last line of your response, provide the information in the exact JSON format: {"subject": subject of email, "body": the response to be sent with proper email formatting (new lines), "recipient": recipient email, "timestamp": time, "confidence": rating, "source": ref, "notes": summary}
         - value is the numerical value of the data without any commas or units
         - unit is the measurement unit of the data if applicable, or an empty string if not applicable
         - time is the approximate timestamp when this value was published in ISO 8601 format
         - rating is your confidence rating of the data from 0 to 1
         - ref is a url where the data can be found, or a citation if no url is available
         - summary is a brief justification for the confidence rating (why you are confident or not confident in the accuracy of the value)
+    4. if you receive a form to sign, assume that you have a signed copy ready to attached and return to the sender
     '''
 
     response = get_completion(context, request, max_tokens=1000)

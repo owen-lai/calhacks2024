@@ -228,18 +228,18 @@ def get_location_coordinates(api_key, location_name):
         raise Exception(f"Error: {response.status_code} - Unable to fetch location data")
 
  
-@InvitationAgent.on_event("startup")
-async def message_handler(ctx: Context):
+@InvitationAgent.on_message(model=Message)
+async def message_handler(ctx: Context, sender: str, msg: Message):
     path = is_email_invitation(get_service(), 'me', latest_message_id)
     ctx.logger.info(path)
-    if path != False:
+    if path != "":
         ctx.logger.info("path is valid")
         ctx.logger.info(open_and_parse_ics(path))
         start_time, end_location = open_and_parse_ics(path)
         api_key = "AIzaSyCyqDRfZygvU-AWOuvI-RtjM2vxwug3nRU"
         # Locations
         origin = "37.78437260699507, -122.40336710947442" # get_user_coordinates()
-        ctx.logger.info(origin)
+        # ctx.logger.info(origin)
         # "37.872813212049145, -122.25356288057456" Example: San Francisco, CA
         destination = get_location_coordinates(api_key, end_location)
         # "37.6213,-122.3789" Example: San Francisco International Airport, CA
@@ -249,10 +249,8 @@ async def message_handler(ctx: Context):
         transport_options = get_transport_options(api_key, origin, destination, desired_arrival_time)
         # Display transportation options
         if transport_options:
-            ctx.logger.info(display_transport_options(transport_options, desired_arrival_time))
-        # ctx.logger.info(open_and_parse_ics
-        # send the response
-        # await ctx.send(sender, Message(message="Cool! Let's get started!"))
+            await ctx.send(sender, display_transport_options(transport_options, desired_arrival_time))
+            # ctx.logger.info(display_transport_options(transport_options, desired_arrival_time))
  
  
 if __name__ == "__main__":
