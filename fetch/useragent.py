@@ -68,14 +68,16 @@ async def ask_question(ctx: Context):
         ctx.logger.info(f"Asking question to AI model agent: {QUESTION}")
         if email.pdfPath:
             await ctx.send(SIGNATURE_AGENT_ADDRESS, PDF(path=email.pdfPath))
-        else:
-            await ctx.send(AI_MODEL_AGENT_ADDRESS, Request(text=QUESTION))
+        await ctx.send(AI_MODEL_AGENT_ADDRESS, Request(text=QUESTION))
         
 
 @agent.on_message(model=Data)
 async def handle_data(ctx: Context, sender: str, data: Data):
     """Log response from AI Model Agent """
-    gmail_create_draft(subject=email.subject, body=data.body, recipient=data.recipient, threadID=email.thread_id, messageID=email.message_id, in_reply_to=email.in_reply_to, references=email.references)
+    pdfpath = None
+    if email.pdfPath:
+        pdfpath = email.pdfPath
+    gmail_create_draft(subject=email.subject, body=data.body, recipient=data.recipient, threadID=email.thread_id, messageID=email.message_id, in_reply_to=email.in_reply_to, references=email.references, filepath=pdfpath)
     ctx.logger.info(f"Got response from AI model agent: {data}")
 
 @agent.on_message(model=Error)

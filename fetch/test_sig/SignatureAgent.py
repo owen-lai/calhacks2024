@@ -307,7 +307,7 @@ async def message_handler(ctx: Context, sender: str, pdf: PDF):
    pdf_document.save("scanned_for_signature.pdf")
    pdf_document.close()
 
-   #os.remove(pdf_name)
+   os.remove(pdf_name)
 
    print("Signed PDF saved to scanned_for_signature.pdf")
 
