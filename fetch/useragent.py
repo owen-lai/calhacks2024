@@ -2,6 +2,7 @@
 This agent can ask a question to the AI model agent and display the answer.
 """
 from re import sub
+import time
 from uagents import Agent, Context, Model
 import sys
 import os
@@ -15,10 +16,6 @@ agent = Agent(
     seed="UserAgent secret phrase",
     endpoint=["http://127.0.0.1:8000/submit"]
 )
-
-# Write your question here
-thread_id, message_id, subject, sender, body = get_latest_email()
-QUESTION = f"Sender Email: {sender}, Body: {body}"
 
 AI_MODEL_AGENT_ADDRESS = (
     "agent1qwckwhmmyp5zl3d67dn2r844v4nt0ygcaxwpglr3vn0e83lagfujq86a38n"
@@ -64,5 +61,11 @@ async def handle_error(ctx: Context, sender: str, error: Error):
     ctx.logger.info(f"Got error from AI model agent: {error}")
 
 if __name__ == "__main__":
-    agent.run()
-    
+    while True:
+        thread_id, message_id, subject, sender, body, labelIds = get_latest_email()
+        if "UNREAD" in labelIds:
+            QUESTION = f"Sender Email: {sender}, Body: {body}"
+            agent.run()
+        else:
+            print("Latest Email Read, waiting 10 seconds")
+            time.sleep(10)
