@@ -22,6 +22,8 @@ AI_MODEL_AGENT_ADDRESS = (
     "agent1qwckwhmmyp5zl3d67dn2r844v4nt0ygcaxwpglr3vn0e83lagfujq86a38n"
 )
 
+SIGNATURE_AGENT_ADDRESS = "agent1qwfq7d60ue0s90gyff0xxm8sq76vlem26kg7m6y54y0tr2zv2xymyr4zh5f"
+
 class Request(Model):
     text: str
 
@@ -46,31 +48,41 @@ class EmailInfo:
     sender: str
     body: str
     labelIds: list[str]
+    pdfPath: str
+    in_reply_to: str
+    references: str
+
+class PDF(Model):
+    path: str
 
 email = EmailInfo()
 
-@agent.on_interval(10.0)
+
+@agent.on_interval(5.0)
 async def ask_question(ctx: Context):
     """Send question to AI Model Agent"""
     #ctx.logger.info(f"Hello, my address is {ctx.address}.")
-    email.thread_id, email.message_id, email.subject, email.sender, email.body, email.labelIds = get_latest_email()
+    email.thread_id, email.message_id, email.subject, email.sender, email.body, email.labelIds, email.pdfPath, email.in_reply_to, email.references = get_latest_email()
     if "UNREAD" in email.labelIds:
         QUESTION = f"Sender Email: {email.sender}, Body: {email.body}"
-        print("here 1")
         ctx.logger.info(f"Asking question to AI model agent: {QUESTION}")
+        if email.pdfPath:
+            await ctx.send(SIGNATURE_AGENT_ADDRESS, PDF(path=email.pdfPath))
         await ctx.send(AI_MODEL_AGENT_ADDRESS, Request(text=QUESTION))
+        
 
 @agent.on_message(model=Data)
 async def handle_data(ctx: Context, sender: str, data: Data):
     """Log response from AI Model Agent """
-    print("here 2")
-    gmail_create_draft(subject=email.subject, body=data.body, recipient=data.recipient, threadID=email.thread_id, messageID=email.message_id)
+    pdfpath = None
+    if email.pdfPath:
+        pdfpath = email.pdfPath
+    gmail_create_draft(subject=email.subject, body=data.body, recipient=data.recipient, threadID=email.thread_id, messageID=email.message_id, in_reply_to=email.in_reply_to, references=email.references, filepath=pdfpath)
     ctx.logger.info(f"Got response from AI model agent: {data}")
 
 @agent.on_message(model=Error)
 async def handle_error(ctx: Context, sender: str, error: Error):
     """log error from AI Model Agent"""
-    print("here 3")
     ctx.logger.info(f"Got error from AI model agent: {error}")
 
 if __name__ == "__main__":

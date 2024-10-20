@@ -1,3 +1,4 @@
+from email import message
 from GmailAPI.util import authenticate, get_service
 import os.path
 import base64
@@ -22,13 +23,17 @@ def get_email_message(service, user_id, message_id):
     # Extract the subject, sender, etc.
     subject = None
     sender = None
+    in_reply_to = None
+    references = None
 
     for header in headers:
         if header['name'] == 'Subject':
             subject = header['value']
         if header['name'] == 'From':
             sender = header['value']
-
+        if header['name'] == 'Message-ID':
+            in_reply_to = header['value']
+            references = header['value']
     body = ''
     if 'parts' in email_data:
         for part in email_data['parts']:
@@ -37,7 +42,7 @@ def get_email_message(service, user_id, message_id):
     
     service.users().messages().modify(userId=user_id, id=message_id, body={'removeLabelIds': ["UNREAD"]}).execute()
 
-    return thread_id, message_id, subject, sender, body, labelIds
+    return thread_id, message_id, subject, sender, body, labelIds, in_reply_to, references
 
 def get_email_attachments(service, user_id, message_id):
     message = service.users().messages().get(userId=user_id, id=message_id, format='full').execute()
@@ -48,26 +53,17 @@ def get_email_attachments(service, user_id, message_id):
                 attachment_id = part['body']['attachmentId']
                 attachment = service.users().messages().attachments().get(userId=user_id, messageId=message_id, id=attachment_id).execute()
                 file_data = base64.urlsafe_b64decode(attachment['data'].encode('UTF-8'))
-                path = os.path.join("", part['filename'])
+                path = os.path.join("test_sig/", part['filename'])
 
                 # Save the attachment to the specified directory
-                with open(part['filename'], 'wb') as f:
+                with open(path, 'wb') as f:
                     f.write(file_data)
                 
                 print(f"Attachment {part['filename']} saved to {path}")
+                return part['filename']
 
 
 def get_latest_email():
-
-    creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists("../GmailAPI/token.json"):
-        creds = Credentials.from_authorized_user_file("../GmailAPI/token.json", SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
-    else:
-        creds = authenticate()
 
     try:
         # Call the Gmail API to fetch a list of emails
@@ -81,9 +77,12 @@ def get_latest_email():
             return
         else:
             message_id = messages[0]['id']
-            thread_id, message_id, subject, sender, body, labelIds = get_email_message(service, "me", message_id)
-            get_email_attachments(service, "me", message_id)
-            return thread_id, message_id, subject, sender, body, labelIds
+            thread_id, message_id, subject, sender, body, labelIds, in_reply_to, references = get_email_message(service, "me", message_id)
+            if "UNREAD" in labelIds:
+                pdfPath = get_email_attachments(service, "me", message_id)
+            else:
+                pdfPath = ""
+            return thread_id, message_id, subject, sender, body, labelIds, pdfPath, in_reply_to, references
             # print(message)
 
     except HttpError as error:
